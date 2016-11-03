@@ -4,7 +4,7 @@ import System.Console.CmdArgs
 import ParseArgs
 import Text.Printf (printf)
 import System.Directory (getDirectoryContents)
-import Data.List (isPrefixOf, sort)
+import Data.List (isPrefixOf)
 import Data.Char (toLower)
 import Prelude hiding (all)
 
@@ -32,4 +32,5 @@ sortFunc a = customQS
 filtFunc :: LS -> String -> Bool
 filtFunc a x
     | all a = True
+    | almost_all a = x `notElem` [".", ".."]
     | otherwise = not ("." `isPrefixOf` x)
