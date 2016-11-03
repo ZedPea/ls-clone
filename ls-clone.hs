@@ -6,14 +6,15 @@ import Text.Printf (printf)
 import System.Directory (getDirectoryContents)
 import Data.List (isPrefixOf, sort)
 import Data.Char (toLower)
+import Prelude hiding (all)
 
 main :: IO ()
 main = do
     argFlags <- cmdArgs ls
-    unfilteredContents <- getDirectoryContents "."
-    let filteredContents = filter filterFunction unfilteredContents
-        sortedContents = sortFunction filteredContents
-    mapM_ (printf "%s  ") sortedContents
+    conts <- getDirectoryContents "."
+    let filtered = filter (filtFunc argFlags) conts
+        sorted = sortFunc argFlags filtered
+    mapM_ (printf "%s  ") sorted
     putStrLn ""
 
 customQS :: [String] -> [String]
@@ -24,9 +25,11 @@ customQS (x:xs) = customQS lesser ++ [x] ++ customQS greater
           noCase = map toLower
 
 --will later expand this to add different sort functions
-sortFunction :: [String] -> [String]
-sortFunction = customQS
+sortFunc :: LS -> [String] -> [String]
+sortFunc a = customQS
 
 --will later exapand this to add different filter functions
-filterFunction :: String -> Bool
-filterFunction x = not ("." `isPrefixOf` x)
+filtFunc :: LS -> String -> Bool
+filtFunc a x
+    | all a = True
+    | otherwise = not ("." `isPrefixOf` x)

@@ -1,10 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
-module ParseArgs 
-(
-ls
-) where
+module ParseArgs where
 
 import System.Console.CmdArgs
 import Prelude hiding (all)
