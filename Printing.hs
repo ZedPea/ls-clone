@@ -9,7 +9,9 @@ import System.Directory (isSymbolicLink)
 import System.FilePath.Posix ((</>))
 import Text.Printf (printf)
 import Control.Monad (when, unless)
-import System.Posix.Files (getFileStatus, isDirectory, fileAccess)
+import System.Posix.Files (getFileStatus, isDirectory, fileAccess, 
+                            isNamedPipe, isSocket, isCharacterDevice,
+                            isBlockDevice)
 
 prettyprint :: LS -> [DirInfo] -> IO ()
 prettyprint a d
@@ -26,19 +28,35 @@ basicPrint d = do
 printFile :: String -> FilePath -> FilePath -> IO ()
 printFile formatter folder f = do
     setSGR [Reset]
+    setColours path
+    printf formatter f
+    where path = folder </> f
+
+setColours :: FilePath -> IO ()
+setColours path = do
     info <- getFileStatus path
-    let isDir = isDirectory info
     isSym <- isSymbolicLink path
     isExec <- fileAccess path False False True
-    when (isExec) $ mapM_ setSGR [execColor, boldness]
-    when (isDir) $ mapM_ setSGR [dirColor, boldness]
-    when (isSym) $ mapM_ setSGR [symColor, boldness]
-    printf formatter f
-    where dirColor = [SetColor Foreground Vivid Blue]
-          symColor = [SetColor Foreground Vivid Cyan]
-          execColor = [SetColor Foreground Vivid Yellow]
-          boldness = [SetConsoleIntensity BoldIntensity]
-          path = folder </> f
+    let isDir = isDirectory info
+        isPipe = isNamedPipe info
+        isSock = isSocket info
+        isDev = isCharacterDevice info
+        isBlock = isBlockDevice info
+        typeColor = [(isExec, execColor), (isDir, dirColor), (isSym, symColor),
+                     (isSock, sockColor), (isDev, devColor), 
+                     (isBlock, blockColor)]
+    mapM_ set typeColor
+    when (isPipe) $ setSGR pipeColor
+    where set (x,a) = when (x) $ mapM_ setSGR [a, boldness]
+
+dirColor = [SetColor Foreground Vivid Blue]
+symColor = [SetColor Foreground Vivid Cyan]
+execColor = [SetColor Foreground Vivid Yellow]
+pipeColor = [SetColor Foreground Dull Green]
+boldness = [SetConsoleIntensity BoldIntensity]
+sockColor = [SetColor Foreground Dull Magenta]
+devColor = execColor
+blockColor = execColor
 
 --print the dirname unless -a / -A hasn't been set and it's a hidden folder
 recursivePrint' :: DirInfo -> LS -> Bool -> IO ()
