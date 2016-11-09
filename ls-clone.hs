@@ -1,18 +1,13 @@
-{-# OPTIONS_GHC -fno-cse #-}
-
-import System.Console.CmdArgs
-import ParseArgs
+import System.Console.CmdArgs (cmdArgs)
+import ParseArgs (LS, ls, recursive, almost_all, all)
 import Text.Printf (printf)
 import System.Directory (getDirectoryContents, listDirectory, 
-                            getCurrentDirectory, isSymbolicLink)
-import System.Posix.Files (isDirectory, getFileStatus, getSymbolicLinkStatus)
+                            getCurrentDirectory)
+import System.Posix.Files (isDirectory, getFileStatus)
 import System.FilePath ((</>))
-import Data.List (isPrefixOf, stripPrefix, sortBy)
-import Data.Char (toLower)
 import Prelude hiding (all)
-import Control.Monad (filterM, unless, when)
-import Data.Maybe (fromJust)
-import System.Console.ANSI
+import Control.Monad (filterM)
+import System.Console.ANSI (SGR (Reset), setSGR)
 import Utilities
 import Printing (prettyprint)
 

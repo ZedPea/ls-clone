@@ -1,13 +1,15 @@
 module Printing where
 
-import Utilities
-import ParseArgs
-import System.Console.ANSI
+import Utilities (DirInfo, dirSort, files, dirName, noShow)
+import ParseArgs (LS, recursive)
+import System.Console.ANSI (setSGR, SGR(..), ConsoleLayer(..), 
+                                ColorIntensity(..), Color(..),
+                                ConsoleIntensity(..))
 import System.Directory (isSymbolicLink)
 import System.FilePath.Posix ((</>))
 import Text.Printf (printf)
 import Control.Monad (when, unless)
-import System.Posix.Files (getFileStatus, isDirectory)
+import System.Posix.Files (getFileStatus, isDirectory, fileAccess)
 
 prettyprint :: LS -> [DirInfo] -> IO ()
 prettyprint a d
@@ -27,12 +29,15 @@ printFile formatter folder f = do
     info <- getFileStatus path
     let isDir = isDirectory info
     isSym <- isSymbolicLink path
+    isExec <- fileAccess path False False True
+    when (isExec) $ mapM_ setSGR [execColor, boldness]
     when (isDir) $ mapM_ setSGR [dirColor, boldness]
     when (isSym) $ mapM_ setSGR [symColor, boldness]
     printf formatter f
     where dirColor = [SetColor Foreground Vivid Blue]
-          boldness = [SetConsoleIntensity BoldIntensity]
           symColor = [SetColor Foreground Vivid Cyan]
+          execColor = [SetColor Foreground Vivid Yellow]
+          boldness = [SetConsoleIntensity BoldIntensity]
           path = folder </> f
 
 --print the dirname unless -a / -A hasn't been set and it's a hidden folder
