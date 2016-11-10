@@ -17,7 +17,7 @@ main = do
     contents <- filter (shouldKeep argFlags) <$> getFiles argFlags
     let sorted = map (filterAndSort argFlags) contents
     prettyprint argFlags sorted
-    setSGR [Reset]
+    runIfTTY $ setSGR [Reset]
 
 getFiles :: LS -> IO [DirInfo]
 getFiles a

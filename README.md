@@ -12,3 +12,5 @@ Currently supported flags:
 -A / --almost-all
 
 -R / --recursive
+
+--nocolor

@@ -1,7 +1,7 @@
 module Printing where
 
-import Utilities (DirInfo, dirSort, files, dirName, noShow)
-import ParseArgs (LS, recursive)
+import Utilities (DirInfo, dirSort, files, dirName, noShow, runIfTTY)
+import ParseArgs (LS, recursive, nocolor)
 import System.Console.ANSI (setSGR, SGR(..), ConsoleLayer(..), 
                                 ColorIntensity(..), Color(..),
                                 ConsoleIntensity(..))
@@ -16,24 +16,29 @@ import System.Posix.Files (getFileStatus, isDirectory, fileAccess,
 prettyprint :: LS -> [DirInfo] -> IO ()
 prettyprint a d
     | recursive a = recursivePrint (dirSort d) a
-    | otherwise = mapM_ basicPrint d
+    | otherwise = mapM_ (\x -> basicPrint x a) d
 
 --don't print the two spaces on the final item
-basicPrint :: DirInfo -> IO ()
-basicPrint d = do
-    mapM_ (printFile "%s  " name') (init (files d))
-    printFile "%s\n" name' (last $ files d)
+basicPrint :: DirInfo -> LS -> IO ()
+basicPrint d a = do
+    mapM_ (printFile a "%s  " name') (init (files d))
+    printFile a "%s\n" name' (last $ files d)
     where name' = dirName d
 
-printFile :: String -> FilePath -> FilePath -> IO ()
-printFile formatter folder f = do
-    setSGR [Reset]
-    setColours path
+{-
+If we're not connected to a terminal, then we don't do any colouring,
+otherwise we get weird escape characters in our output
+-}
+printFile :: LS -> String -> FilePath -> FilePath -> IO ()
+printFile a formatter folder f = do
+    runIfTTY $ setSGR [Reset] >> setColours path a
     printf formatter f
     where path = folder </> f
 
-setColours :: FilePath -> IO ()
-setColours path = do
+setColours :: FilePath -> LS -> IO ()
+setColours path a
+    | nocolor a = return ()
+    | otherwise = do
     info <- getFileStatus path
     isSym <- isSymbolicLink path
     isExec <- fileAccess path False False True
@@ -47,7 +52,7 @@ setColours path = do
                      (isBlock, blockColor)]
     mapM_ set typeColor
     when (isPipe) $ setSGR pipeColor
-    where set (x,a) = when (x) $ mapM_ setSGR [a, boldness]
+    where set (x,y) = when (x) $ mapM_ setSGR [y, boldness]
 
 dirColor = [SetColor Foreground Vivid Blue]
 symColor = [SetColor Foreground Vivid Cyan]
@@ -61,12 +66,13 @@ blockColor = execColor
 --print the dirname unless -a / -A hasn't been set and it's a hidden folder
 recursivePrint' :: DirInfo -> LS -> Bool -> IO ()
 recursivePrint' d a final = do
-    setSGR [Reset]
+    --we need to reset here so the dirname doesn't get coloured
+    runIfTTY $ setSGR [Reset]
     unless (noShow a (dirName d)) $ printf "%s:\n" (dirName d)
     --need to check files aren't null otherwise init/last will fail
     unless (null (files d)) $ do
-        mapM_ (printFile "%s  " name') (init (files d))    
-        printFile "%s" name' (last $ files d)
+        mapM_ (printFile a "%s  " name') (init (files d))    
+        printFile a "%s" name' (last $ files d)
         when final $ putStr "\n"
     where name' = dirName d
 

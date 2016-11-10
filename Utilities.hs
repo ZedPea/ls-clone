@@ -5,6 +5,9 @@ import Prelude hiding (all)
 import Data.List (sortBy, isPrefixOf, stripPrefix)
 import Data.Maybe (fromJust)
 import Data.Char (toLower)
+import System.Posix.Terminal (queryTerminal)
+import System.Posix.IO (stdOutput)
+import Control.Monad (when)
 
 data DirInfo = DirInfo {
     dirName :: String,
@@ -75,3 +78,8 @@ compPath a b
     | nm a > nm b = GT
     | otherwise = LT
     where nm = map toLower . filter (/= '.')
+
+runIfTTY :: IO () -> IO ()
+runIfTTY f = do
+    isTTY <- queryTerminal stdOutput
+    when isTTY f

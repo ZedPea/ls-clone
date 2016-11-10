@@ -16,7 +16,7 @@ ls = LS {
     block_size = def &= typ "SIZE" &= help "scale sizes by SIZE before printing them; e.g., '--block-size=M' prints sizes in units of 1,048,576 bytes; see SIZE format below",
     ignore_backups = def &= name "B" &= help "do not list implied entries ending with ~",
     list_by_columns = def &= explicit &= name "C" &= help "list entries by columns",
-    color = def &= typ "WHEN" &= explicit &= name "color" &= help "colorize the output; WHEN can be 'always' (default if omitted), 'auto', or 'never'; more info below",
+    nocolor = def &= explicit &= name "nocolor" &= help "disable colorisation of the output; enabled by default",
     directory = def &= help "list directories themselves, not their contents",
     dired = def &= name "D" &= name "dired" &= help "generate ouput designed for Emacs' dired mode",
     no_sort = def &= name "f" &= explicit &= help "do not sort, enable -aU, disable -ls --color",
@@ -83,7 +83,7 @@ data LS = LS {
     ignore_backups :: Bool,
     --I don't know what -c is really mean to do, will work out later
     list_by_columns :: Bool,
-    color :: String, -- maybe another custom type for this
+    nocolor :: Bool, -- maybe another custom type for this
     directory :: Bool,
     dired :: Bool, --emacs fags yawn
     no_sort :: Bool,
