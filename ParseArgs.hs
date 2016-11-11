@@ -9,7 +9,7 @@ import Prelude hiding (all)
 ls :: LS
 ls = LS { 
     file = def &= args &= typFile,
-    all = def &= name "a" &= help "do not ignore entries starting with .",
+    all' = def &= explicit &= name "a" &= name "all" &= help "do not ignore entries starting with .",
     almost_all = def &= name "A" &= help "Do not list implied . and ..",
     author = def &= help "with -l, print the author of each file",
     escape = def &= name "b" &= help "print C-style escapes for nongraphic characters",
@@ -75,7 +75,7 @@ infer more argument names
 {-# ANN module "HLint: ignore Use camelCase" #-}
 data LS = LS {
     file :: FilePath,
-    all :: Bool,
+    all' :: Bool,
     almost_all :: Bool,
     author :: Bool,
     escape :: Bool,
@@ -83,7 +83,7 @@ data LS = LS {
     ignore_backups :: Bool,
     --I don't know what -c is really mean to do, will work out later
     list_by_columns :: Bool,
-    nocolor :: Bool, -- maybe another custom type for this
+    nocolor :: Bool,
     directory :: Bool,
     dired :: Bool, --emacs fags yawn
     no_sort :: Bool,

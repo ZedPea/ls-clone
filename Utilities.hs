@@ -8,9 +8,10 @@ import Data.Char (toLower)
 import System.Posix.Terminal (queryTerminal)
 import System.Posix.IO (stdOutput)
 import Control.Monad (when)
+import Text.Printf (printf)
 
 data DirInfo = DirInfo {
-    dirName :: String,
+    dirName :: FilePath,
     files :: [FilePath]
 };
 
@@ -36,7 +37,7 @@ sortFunc _ = sortBy compPath
 --will later expand this to add different filter functions
 filtFunc :: LS -> FilePath -> Bool
 filtFunc a x
-    | all a = True
+    | all' a = True
     | almost_all a = x `notElem` [".", ".."]
     | otherwise = not ("." `isPrefixOf` x)
 
@@ -52,7 +53,7 @@ If we are in -a / -A mode then we show it regardless
 -}
 noShow :: LS -> String -> Bool
 noShow a xs
-    | all a || almost_all a = False
+    | all' a || almost_all a = False
     | otherwise = (length xs >= 3) && (xs !! 2 == '.')
 
 filterAndSort :: LS -> DirInfo -> DirInfo
@@ -83,3 +84,6 @@ runIfTTY :: IO () -> IO ()
 runIfTTY f = do
     isTTY <- queryTerminal stdOutput
     when isTTY f
+
+noExist :: FilePath -> String
+noExist = printf "ls: cannot access '%s': No such file or directory"

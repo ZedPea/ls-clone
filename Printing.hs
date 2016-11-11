@@ -20,10 +20,15 @@ prettyprint a d
 
 --don't print the two spaces on the final item
 basicPrint :: DirInfo -> LS -> IO ()
-basicPrint d a = do
-    mapM_ (printFile a "%s  " name') (init (files d))
-    printFile a "%s\n" name' (last $ files d)
+basicPrint d a
+    | null f = return ()
+    | length f == 1 = def (head f)
+    | otherwise = do
+    mapM_ (printFile a "%s  " name') (init f)
+    def (last f)
     where name' = dirName d
+          def = printFile a "%s\n" name'
+          f = files d
 
 {-
 If we're not connected to a terminal, then we don't do any colouring,
@@ -33,6 +38,7 @@ printFile :: LS -> String -> FilePath -> FilePath -> IO ()
 printFile a formatter folder f = do
     runIfTTY $ setSGR [Reset] >> setColours path a
     printf formatter f
+    runIfTTY $ setSGR [Reset]
     where path = folder </> f
 
 setColours :: FilePath -> LS -> IO ()

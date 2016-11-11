@@ -1,33 +1,53 @@
 import System.Console.CmdArgs (cmdArgs)
-import ParseArgs (LS, ls, recursive, almost_all, all)
-import Text.Printf (printf)
+import ParseArgs (LS, ls, recursive, almost_all, all', file)
 import System.Directory (getDirectoryContents, listDirectory, 
-                            getCurrentDirectory)
+                         getCurrentDirectory, doesFileExist,
+                         doesDirectoryExist)
 import System.Posix.Files (isDirectory, getFileStatus)
-import System.FilePath ((</>))
-import Prelude hiding (all)
+import System.FilePath ((</>), takeDirectory)
 import Control.Monad (filterM)
 import System.Console.ANSI (SGR (Reset), setSGR)
 import Utilities
-import Printing (prettyprint)
+import Printing (prettyprint, basicPrint)
+
+data PathInfo = PathInfo {
+    path' :: FilePath,
+    isDir' :: Bool,
+    exists' :: Bool
+};
 
 main :: IO ()
 main = do
     argFlags <- cmdArgs ls
-    contents <- filter (shouldKeep argFlags) <$> getFiles argFlags
-    let sorted = map (filterAndSort argFlags) contents
-    prettyprint argFlags sorted
+    case (null $ file argFlags) of
+        True -> getAndPrint argFlags =<< getCurrentDirectory
+        False -> do
+            info <- getCmdDir argFlags
+            mapM_ (getAndPrint argFlags) =<< handleCmdDir info argFlags
+   
+getAndPrint :: LS -> FilePath -> IO ()
+getAndPrint a cwd = do
+    contents <- filter (shouldKeep a) <$> getFiles a cwd
+    let sorted = map (filterAndSort a) contents
+    prettyprint a sorted
     runIfTTY $ setSGR [Reset]
 
-getFiles :: LS -> IO [DirInfo]
-getFiles a
-    | recursive a = do
-        cwd <- getCurrentDirectory
-        recurseGetFiles cwd cwd keepHidden
+handleCmdDir :: PathInfo -> LS -> IO (Maybe FilePath)
+handleCmdDir p a
+    | not $ exists' p = putStrLn (noExist fn) >> return Nothing
+    | not $ isDir' p = basicPrint (DirInfo dir [fn]) a >> return Nothing
+    | otherwise = return (Just fn)
+    where dirInfo = DirInfo 
+          fn = path' p
+          dir = takeDirectory fn
+
+getFiles :: LS -> FilePath -> IO [DirInfo]
+getFiles a dir
+    | recursive a = recurseGetFiles dir dir keepHidden
     | otherwise = do
-        d <- getDirectoryContents "." 
+        d <- getDirectoryContents dir
         return [DirInfo "." d]
-    where keepHidden = almost_all a || all a
+    where keepHidden = almost_all a || all' a
 
 recurseGetFiles :: FilePath -> FilePath -> Bool -> IO [DirInfo]
 recurseGetFiles cwd path keepHidden = do
@@ -39,3 +59,18 @@ recurseGetFiles cwd path keepHidden = do
     dirs <- filterM (\x -> isDirectory <$> getFileStatus x) paths
     newpaths <- concat <$> mapM (\x -> recurseGetFiles cwd x keepHidden) dirs
     return (contInfo : newpaths)
+
+--case expression is much clearer than if here
+{-# ANN module "HLint: ignore Use if" #-}
+getCmdDir :: LS -> IO PathInfo
+getCmdDir a = do
+    isFile <- doesFileExist path
+    isDir <- doesDirectoryExist path
+    let exists = isFile || isDir
+    case exists of
+        False -> fail'
+        True -> if isDir then dir else item
+    where path = file a
+          fail' = return $ PathInfo path False False
+          item = return $ PathInfo path False True
+          dir = return $ PathInfo path True True
