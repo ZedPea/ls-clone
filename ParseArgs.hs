@@ -65,8 +65,7 @@ ls = LS {
     one_file_per_line = def &= name "1" &= explicit &= help "list one file per line. Avoid '\\n' with -q or -b"
 } &= help "List information about the FILEs (the current directory by default).\nSort entries alphabetically if none of -cftuvSUX nor --sort is specified.\nMandatory arguments to long options are mandatory for short options too."
   &= summary ""
-  &= details ["The SIZE argument is an integer and optional unit (example: 10K is 10*1024).","Units are K,M,G,T,P,E,Z,Y (powers of 1024) or KB,MB,...(powers of 1000).","","Using color to distinguish file types is enabled by default and is disabled with --nocolor. Color output is automatically disabled when not connected to a terminal","Exit status:","0 if OK,","1 is minor problems (e.g., cannot access subdirectory),","2 is serious trouble (e.g., cannot access command-line argument)."]
-
+  &= details ["The SIZE argument is an integer and optional unit (example: 10K is 10*1024).","Units are K,M,G,T,P,E,Z,Y (powers of 1024) or KB,MB,...(powers of 1000).","","Using color to distinguish file types is enabled by default and is disabled with --nocolor. Color output is automatically disabled when not connected to a terminal."]
 
 {-
 need to use underscores so cmdargs converts them to dashes so it can
@@ -74,7 +73,7 @@ infer more argument names
 -}
 {-# ANN module "HLint: ignore Use camelCase" #-}
 data LS = LS {
-    file :: FilePath,
+    file :: [FilePath],
     all' :: Bool,
     almost_all :: Bool,
     author :: Bool,

@@ -60,6 +60,8 @@ setColours path a
     when (isPipe) $ setSGR pipeColor
     where set (x,y) = when (x) $ mapM_ setSGR [y, boldness]
 
+dirColor, symColor, execColor, pipeColor, boldness, sockColor :: [SGR]
+devColor, blockColor :: [SGR]
 dirColor = [SetColor Foreground Vivid Blue]
 symColor = [SetColor Foreground Vivid Cyan]
 execColor = [SetColor Foreground Vivid Yellow]

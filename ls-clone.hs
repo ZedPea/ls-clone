@@ -4,7 +4,7 @@ import System.Directory (getDirectoryContents, listDirectory,
                          getCurrentDirectory, doesFileExist,
                          doesDirectoryExist)
 import System.Posix.Files (isDirectory, getFileStatus)
-import System.FilePath ((</>), takeDirectory)
+import System.FilePath ((</>), takeDirectory, hasDrive)
 import Control.Monad (filterM)
 import System.Console.ANSI (SGR (Reset), setSGR)
 import Utilities
@@ -22,8 +22,21 @@ main = do
     case (null $ file argFlags) of
         True -> getAndPrint argFlags =<< getCurrentDirectory
         False -> do
-            info <- getCmdDir argFlags
-            mapM_ (getAndPrint argFlags) =<< handleCmdDir info argFlags
+            {-
+            have to somehow get the amount of paths, and if it's more than
+            one, print empty new line if empty dir, else print contents.
+            Can't do inside getAndPrint because we map over it. Can't do
+            outside cause can't tell if any elements or not. Might need to 
+            semi replicate getAndPrint.
+            -}
+            info <- mapM getCmdDir (file argFlags)
+            paths <- filterMaybe <$> mapM (\x -> handleCmdDir x argFlags) info
+            mapM_ (getAndPrint argFlags) paths
+
+filterMaybe :: [Maybe a] -> [a]
+filterMaybe [] = []
+filterMaybe ((Nothing):xs) = filterMaybe xs
+filterMaybe ((Just x):xs) = x : filterMaybe xs
    
 getAndPrint :: LS -> FilePath -> IO ()
 getAndPrint a cwd = do
@@ -36,9 +49,10 @@ handleCmdDir :: PathInfo -> LS -> IO (Maybe FilePath)
 handleCmdDir p a
     | not $ exists' p = putStrLn (noExist fn) >> return Nothing
     | not $ isDir' p = basicPrint (DirInfo dir [fn]) a >> return Nothing
-    | otherwise = return (Just fn)
-    where dirInfo = DirInfo 
-          fn = path' p
+    | otherwise = if hasDrive fn then return (Just fn) else do
+        cwd <- getCurrentDirectory
+        return $ Just (cwd </> fn)
+    where fn = path' p
           dir = takeDirectory fn
 
 getFiles :: LS -> FilePath -> IO [DirInfo]
@@ -46,7 +60,7 @@ getFiles a dir
     | recursive a = recurseGetFiles dir dir keepHidden
     | otherwise = do
         d <- getDirectoryContents dir
-        return [DirInfo "." d]
+        return [DirInfo dir d]
     where keepHidden = almost_all a || all' a
 
 recurseGetFiles :: FilePath -> FilePath -> Bool -> IO [DirInfo]
@@ -62,15 +76,14 @@ recurseGetFiles cwd path keepHidden = do
 
 --case expression is much clearer than if here
 {-# ANN module "HLint: ignore Use if" #-}
-getCmdDir :: LS -> IO PathInfo
-getCmdDir a = do
+getCmdDir :: FilePath -> IO PathInfo
+getCmdDir path = do
     isFile <- doesFileExist path
     isDir <- doesDirectoryExist path
     let exists = isFile || isDir
     case exists of
         False -> fail'
         True -> if isDir then dir else item
-    where path = file a
-          fail' = return $ PathInfo path False False
+    where fail' = return $ PathInfo path False False
           item = return $ PathInfo path False True
           dir = return $ PathInfo path True True
