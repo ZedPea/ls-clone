@@ -1,7 +1,6 @@
 module Utilities where
 
 import ParseArgs
-import Prelude hiding (all)
 import Data.List (sortBy, isPrefixOf, stripPrefix)
 import Data.Maybe (fromJust)
 import Data.Char (toLower)

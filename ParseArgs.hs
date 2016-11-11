@@ -4,7 +4,6 @@
 module ParseArgs where
 
 import System.Console.CmdArgs
-import Prelude hiding (all)
 
 ls :: LS
 ls = LS { 
