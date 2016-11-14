@@ -5,13 +5,12 @@ import ParseArgs (LS, recursive, nocolor)
 import System.Console.ANSI (setSGR, SGR(..), ConsoleLayer(..), 
                                 ColorIntensity(..), Color(..),
                                 ConsoleIntensity(..))
-import System.Directory (isSymbolicLink)
+import System.Directory (isSymbolicLink, doesDirectoryExist)
 import System.FilePath.Posix ((</>))
 import Text.Printf (printf)
 import Control.Monad (when, unless)
-import System.Posix.Files (getFileStatus, isDirectory, fileAccess, 
-                            isNamedPipe, isSocket, isCharacterDevice,
-                            isBlockDevice)
+import System.Posix.Files (getFileStatus, fileAccess, isNamedPipe, isSocket,
+                            isCharacterDevice, isBlockDevice)
 
 prettyprint :: LS -> [DirInfo] -> IO ()
 prettyprint a d
@@ -48,8 +47,8 @@ setColours path a
     info <- getFileStatus path
     isSym <- isSymbolicLink path
     isExec <- fileAccess path False False True
-    let isDir = isDirectory info
-        isPipe = isNamedPipe info
+    isDir <- doesDirectoryExist path
+    let isPipe = isNamedPipe info
         isSock = isSocket info
         isDev = isCharacterDevice info
         isBlock = isBlockDevice info

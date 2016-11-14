@@ -3,7 +3,6 @@ import ParseArgs (LS, ls, recursive, almost_all, all', file)
 import System.Directory (getDirectoryContents, listDirectory, 
                          getCurrentDirectory, doesFileExist,
                          doesDirectoryExist)
-import System.Posix.Files (isDirectory, getFileStatus)
 import System.FilePath ((</>), takeDirectory, hasDrive)
 import Control.Monad (filterM)
 import System.Console.ANSI (SGR (Reset), setSGR)
@@ -72,7 +71,7 @@ recurseGetFiles cwd path keepHidden = do
     let paths = map (path </>) contents
         name' = relativeDir cwd path
         contInfo = DirInfo name' ("." : ".." : contents)
-    dirs <- liftIO $ filterM (\x -> isDirectory <$> getFileStatus x) paths
+    dirs <- liftIO $ filterM doesDirectoryExist paths
     mapM_ (\x -> recurseGetFiles cwd x keepHidden) dirs
     tell [contInfo]
 
