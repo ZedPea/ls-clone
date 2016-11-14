@@ -16,7 +16,7 @@ import System.Posix.Files (getFileStatus, isDirectory, fileAccess,
 prettyprint :: LS -> [DirInfo] -> IO ()
 prettyprint a d
     | recursive a = recursivePrint (dirSort d) a
-    | otherwise = mapM_ (\x -> basicPrint x a) d
+    | otherwise = mapM_ (`basicPrint` a) d
 
 --don't print the two spaces on the final item
 basicPrint :: DirInfo -> LS -> IO ()
@@ -24,8 +24,8 @@ basicPrint d a
     | null f = return ()
     | length f == 1 = def (head f)
     | otherwise = do
-    mapM_ (printFile a "%s  " name') (init f)
-    def (last f)
+    mapM_ (printFile a "%s  " name') $ init f
+    def $ last f
     where name' = dirName d
           def = printFile a "%s\n" name'
           f = files d
@@ -57,8 +57,8 @@ setColours path a
                      (isSock, sockColor), (isDev, devColor), 
                      (isBlock, blockColor)]
     mapM_ set typeColor
-    when (isPipe) $ setSGR pipeColor
-    where set (x,y) = when (x) $ mapM_ setSGR [y, boldness]
+    when isPipe $ setSGR pipeColor
+    where set (x,y) = when x $ mapM_ setSGR [y, boldness]
 
 dirColor, symColor, execColor, pipeColor, boldness, sockColor :: [SGR]
 devColor, blockColor :: [SGR]
@@ -76,11 +76,11 @@ recursivePrint' :: DirInfo -> LS -> Bool -> IO ()
 recursivePrint' d a final = do
     --we need to reset here so the dirname doesn't get coloured
     runIfTTY $ setSGR [Reset]
-    unless (noShow a (dirName d)) $ printf "%s:\n" (dirName d)
+    unless (noShow a $ dirName d) . printf "%s:\n" $ dirName d
     --need to check files aren't null otherwise init/last will fail
-    unless (null (files d)) $ do
-        mapM_ (printFile a "%s  " name') (init (files d))    
-        printFile a "%s" name' (last $ files d)
+    unless (null $ files d) $ do
+        mapM_ (printFile a "%s  " name') . init $ files d
+        printFile a "%s" name' . last $ files d
         when final $ putStr "\n"
     where name' = dirName d
 

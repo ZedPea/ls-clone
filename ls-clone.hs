@@ -19,7 +19,7 @@ data PathInfo = PathInfo {
 main :: IO ()
 main = do
     argFlags <- cmdArgs ls
-    case (null $ file argFlags) of
+    case null $ file argFlags of
         True -> getAndPrint argFlags =<< getCurrentDirectory
         False -> do
             {-
@@ -30,13 +30,13 @@ main = do
             semi replicate getAndPrint.
             -}
             info <- mapM getCmdDir (file argFlags)
-            paths <- filterMaybe <$> mapM (\x -> handleCmdDir x argFlags) info
+            paths <- filterMaybe <$> mapM (`handleCmdDir` argFlags) info
             mapM_ (getAndPrint argFlags) paths
 
 filterMaybe :: [Maybe a] -> [a]
 filterMaybe [] = []
-filterMaybe ((Nothing):xs) = filterMaybe xs
-filterMaybe ((Just x):xs) = x : filterMaybe xs
+filterMaybe (Nothing:xs) = filterMaybe xs
+filterMaybe (Just x:xs) = x : filterMaybe xs
    
 getAndPrint :: LS -> FilePath -> IO ()
 getAndPrint a cwd = do
@@ -51,7 +51,7 @@ handleCmdDir p a
     | not $ isDir' p = basicPrint (DirInfo dir [fn]) a >> return Nothing
     | otherwise = if hasDrive fn then return (Just fn) else do
         cwd <- getCurrentDirectory
-        return $ Just (cwd </> fn)
+        return . Just $ cwd </> fn
     where fn = path' p
           dir = takeDirectory fn
 
@@ -65,14 +65,14 @@ getFiles a dir
 
 recurseGetFiles :: FilePath -> FilePath -> Bool -> IO [DirInfo]
 recurseGetFiles cwd path keepHidden = do
-    contents <- removeHidden (keepHidden) <$> listDirectory path
+    contents <- removeHidden keepHidden <$> listDirectory path
     let paths = map (path </>) contents
         name' = relativeDir cwd path
         --add "." and ".." here so we don't recurse forever
         contInfo = DirInfo name' ("." : ".." : contents)
     dirs <- filterM (\x -> isDirectory <$> getFileStatus x) paths
     newpaths <- concat <$> mapM (\x -> recurseGetFiles cwd x keepHidden) dirs
-    return (contInfo : newpaths)
+    return $ contInfo : newpaths
 
 --case expression is much clearer than if here
 {-# ANN module "HLint: ignore Use if" #-}
