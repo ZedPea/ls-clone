@@ -9,6 +9,8 @@ import Control.Monad (filterM)
 import System.Console.ANSI (SGR (Reset), setSGR)
 import Utilities
 import Printing (prettyprint, basicPrint)
+import Control.Monad.Trans (liftIO)
+import Control.Monad.Writer (WriterT, tell, execWriterT)
 
 data PathInfo = PathInfo {
     path' :: FilePath,
@@ -57,22 +59,22 @@ handleCmdDir p a
 
 getFiles :: LS -> FilePath -> IO [DirInfo]
 getFiles a dir
-    | recursive a = recurseGetFiles dir dir keepHidden
+    | recursive a = execWriterT $ recurseGetFiles dir dir keepHidden
     | otherwise = do
         d <- getDirectoryContents dir
         return [DirInfo dir d]
     where keepHidden = almost_all a || all' a
 
-recurseGetFiles :: FilePath -> FilePath -> Bool -> IO [DirInfo]
+--we add . and .. later so we don't recurse forever
+recurseGetFiles :: FilePath -> FilePath -> Bool -> WriterT [DirInfo] IO ()
 recurseGetFiles cwd path keepHidden = do
-    contents <- removeHidden keepHidden <$> listDirectory path
+    contents <- liftIO $ removeHidden keepHidden <$> listDirectory path
     let paths = map (path </>) contents
         name' = relativeDir cwd path
-        --add "." and ".." here so we don't recurse forever
         contInfo = DirInfo name' ("." : ".." : contents)
-    dirs <- filterM (\x -> isDirectory <$> getFileStatus x) paths
-    newpaths <- concat <$> mapM (\x -> recurseGetFiles cwd x keepHidden) dirs
-    return $ contInfo : newpaths
+    dirs <- liftIO $ filterM (\x -> isDirectory <$> getFileStatus x) paths
+    mapM_ (\x -> recurseGetFiles cwd x keepHidden) dirs
+    tell [contInfo]
 
 --case expression is much clearer than if here
 {-# ANN module "HLint: ignore Use if" #-}
